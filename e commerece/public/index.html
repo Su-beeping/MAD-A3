@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Commerce Store</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    nav { background: #333; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    nav h1 { font-size: 1.5rem; }
+    nav div { display: flex; gap: 10px; }
+    nav button { background: #ff6600; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+    nav button:hover { background: #e55a00; }
+    .page { display: none; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+    .page.active { display: block; }
+    .form-box { background: white; padding: 2rem; border-radius: 8px; max-width: 400px; margin: 2rem auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .form-box h2 { margin-bottom: 1rem; }
+    .form-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
+    .form-box button { width: 100%; padding: 10px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+    .form-box button:hover { background: #555; }
+    .form-box p { margin-top: 10px; text-align: center; font-size: 14px; }
+    .form-box a { color: #ff6600; cursor: pointer; }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
+    .product-card { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+    .product-card img { width: 100%; height: 160px; object-fit: cover; border-radius: 4px; }
+    .product-card h3 { margin: 10px 0 5px; }
+    .product-card p { color: #666; font-size: 14px; margin-bottom: 8px; }
+    .product-card .price { font-size: 1.2rem; font-weight: bold; color: #ff6600; }
+    .product-card button { margin-top: 10px; width: 100%; padding: 8px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .product-card button:hover { background: #555; }
+    .cart-item { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .cart-item button { background: #e00; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    .cart-total { font-size: 1.3rem; font-weight: bold; text-align: right; margin-top: 1rem; }
+    .admin-form { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .admin-form h3 { margin-bottom: 1rem; }
+    .admin-form input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: calc(50% - 12px); }
+    .admin-form button { padding: 10px 20px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+    .msg { padding: 10px; border-radius: 4px; margin: 10px 0; text-align: center; }
+    .msg.success { background: #d4edda; color: #155724; }
+    .msg.error { background: #f8d7da; color: #721c24; }
+    h2 { margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <h1>🛒 ShopEasy</h1>
+  <div>
+    <button onclick="showPage('products')">Products</button>
+    <button onclick="showPage('cart')">Cart (<span id="cartCount">0</span>)</button>
+    <button id="authBtn" onclick="showPage('login')">Login</button>
+    <button id="adminBtn" style="display:none" onclick="showPage('admin')">Admin</button>
+  </div>
+</nav>
+
+<!-- Login Page -->
+<div id="loginPage" class="page active">
+  <div class="form-box">
+    <h2>Login</h2>
+    <div id="loginMsg"></div>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p>No account? <a onclick="showPage('register')">Register here</a></p>
+  </div>
+</div>
+
+<!-- Register Page -->
+<div id="registerPage" class="page">
+  <div class="form-box">
+    <h2>Register</h2>
+    <div id="registerMsg"></div>
+    <input type="text" id="regName" placeholder="Full Name">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="password" id="regPassword" placeholder="Password">
+    <button onclick="register()">Register</button>
+    <p>Already have an account? <a onclick="showPage('login')">Login here</a></p>
+  </div>
+</div>
+
+<!-- Products Page -->
+<div id="productsPage" class="page">
+  <h2>Our Products</h2>
+  <div class="products-grid" id="productsGrid"></div>
+</div>
+
+<!-- Cart Page -->
+<div id="cartPage" class="page">
+  <h2>Your Cart</h2>
+  <div id="cartItems"></div>
+  <div class="cart-total" id="cartTotal"></div>
+</div>
+
+<!-- Admin Page -->
+<div id="adminPage" class="page">
+  <h2>Admin Panel</h2>
+  <div class="admin-form">
+    <h3>Add New Product</h3>
+    <input type="text" id="pName" placeholder="Product Name">
+    <input type="text" id="pDesc" placeholder="Description">
+    <input type="number" id="pPrice" placeholder="Price">
+    <input type="number" id="pStock" placeholder="Stock">
+    <input type="text" id="pImage" placeholder="Image URL (optional)">
+    <br>
+    <button onclick="addProduct()">Add Product</button>
+  </div>
+  <h3>All Products</h3>
+  <div id="adminProducts"></div>
+</div>
+
+<script>
+  const API = 'http://localhost:3001/api';
+  let currentUser = null;
+
+  function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(page + 'Page').classList.add('active');
+    if (page === 'products') loadProducts();
+    if (page === 'cart') loadCart();
+    if (page === 'admin') loadAdminProducts();
+  }
+
+  async function register() {
+    const name = document.getElementById('regName').value;
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const res = await fetch(`${API}/register`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+    const msg = document.getElementById('registerMsg');
+    if (res.ok) {
+      msg.className = 'msg success'; msg.textContent = 'Registered! Please login.';
+      setTimeout(() => showPage('login'), 1500);
+    } else {
+      msg.className = 'msg error'; msg.textContent = data.error;
+    }
+  }
+
+  async function login() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const res = await fetch(`${API}/login`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    const msg = document.getElementById('loginMsg');
+    if (res.ok) {
+      currentUser = data.user;
+      document.getElementById('authBtn').textContent = 'Logout';
+      document.getElementById('authBtn').onclick = logout;
+      if (currentUser.role === 'admin') document.getElementById('adminBtn').style.display = 'inline';
+      showPage('products');
+    } else {
+      msg.className = 'msg error'; msg.textContent = data.error;
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    document.getElementById('authBtn').textContent = 'Login';
+    document.getElementById('authBtn').onclick = () => showPage('login');
+    document.getElementById('adminBtn').style.display = 'none';
+    document.getElementById('cartCount').textContent = '0';
+    showPage('login');
+  }
+
+  async function loadProducts() {
+    const res = await fetch(`${API}/products`);
+    const products = await res.json();
+    document.getElementById('productsGrid').innerHTML = products.map(p => `
+      <div class="product-card">
+        <img src="${p.image_url || 'https://via.placeholder.com/200'}" alt="${p.name}">
+        <h3>${p.name}</h3>
+        <p>${p.description}</p>
+        <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
+        <p>Stock: ${p.stock}</p>
+        <button onclick="addToCart(${p.id})">Add to Cart</button>
+      </div>
+    `).join('');
+  }
+
+  async function addToCart(productId) {
+    if (!currentUser) { alert('Please login first!'); showPage('login'); return; }
+    await fetch(`${API}/cart`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ user_id: currentUser.id, product_id: productId, quantity: 1 })
+    });
+    const count = parseInt(document.getElementById('cartCount').textContent) + 1;
+    document.getElementById('cartCount').textContent = count;
+    alert('Added to cart!');
+  }
+
+  async function loadCart() {
+    if (!currentUser) { document.getElementById('cartItems').innerHTML = '<p>Please login to view cart.</p>'; return; }
+    const res = await fetch(`${API}/cart/${currentUser.id}`);
+    const items = await res.json();
+    document.getElementById('cartCount').textContent = items.length;
+    if (items.length === 0) {
+      document.getElementById('cartItems').innerHTML = '<p>Your cart is empty.</p>';
+      document.getElementById('cartTotal').textContent = '';
+      return;
+    }
+    let total = 0;
+    document.getElementById('cartItems').innerHTML = items.map(item => {
+      total += item.price * item.quantity;
+      return `<div class="cart-item">
+        <span>${item.name} x${item.quantity}</span>
+        <span>$${(item.price * item.quantity).toFixed(2)}</span>
+        <button onclick="removeFromCart(${item.id})">Remove</button>
+      </div>`;
+    }).join('');
+    document.getElementById('cartTotal').textContent = `Total: $${total.toFixed(2)}`;
+  }
+
+  async function removeFromCart(cartId) {
+    await fetch(`${API}/cart/${cartId}`, { method: 'DELETE' });
+    loadCart();
+  }
+
+  async function addProduct() {
+    const name = document.getElementById('pName').value;
+    const description = document.getElementById('pDesc').value;
+    const price = document.getElementById('pPrice').value;
+    const stock = document.getElementById('pStock').value;
+    const image_url = document.getElementById('pImage').value || 'https://via.placeholder.com/200';
+    await fetch(`${API}/products`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name, description, price, image_url, stock })
+    });
+    alert('Product added!');
+    loadAdminProducts();
+  }
+
+  async function loadAdminProducts() {
+    const res = await fetch(`${API}/products`);
+    const products = await res.json();
+    document.getElementById('adminProducts').innerHTML = products.map(p => `
+      <div class="cart-item">
+        <span>${p.name} - $${parseFloat(p.price).toFixed(2)}</span>
+        <button onclick="deleteProduct(${p.id})">Delete</button>
+      </div>
+    `).join('');
+  }
+
+  async function deleteProduct(id) {
+    await fetch(`${API}/products/${id}`, { method: 'DELETE' });
+    loadAdminProducts();
+  }
+</script>
+</body>
+</html>
